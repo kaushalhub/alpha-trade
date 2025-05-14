@@ -1,0 +1,79 @@
+/* glass.css */
+
+body {
+    /* background: linear-gradient(135deg, #1f1c2c, #928dab); */
+    color: #333;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 20px;
+  }
+  
+  .glass-container {
+    max-width: 1000px;
+    margin: auto;
+  }
+  
+  .glass-title {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  .glass-card,
+  .glass-form {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 20px;
+    color: #333;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+  }
+  
+  .glass-card h5 {
+    font-weight: 600;
+  }
+  
+  .glass-input {
+    background: rgba(255, 255, 255, 0.15);
+    color: #333;
+    border: none;
+    border-radius: 8px;
+  }
+  
+  .glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  input.form-control.glass-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(23, 192, 235, 0.25);
+    outline: none;
+    border: 1px solid rgba(23, 192, 235, 0.5);
+  }
+  
+  .table-dark {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .btn-outline-light:hover {
+    background-color: #ffffff22;
+  }
+  
+  .btn-success {
+    background-color: #00c896;
+    border: none;
+  }
+  
+  .btn-success:hover {
+    background-color: #00b083;
+  }
+  
+  .btn-danger {
+    background-color: #ff4e4e;
+    border: none;
+  }
+  
+  .btn-danger:hover {
+    background-color: #e84141;
+  }
+  
