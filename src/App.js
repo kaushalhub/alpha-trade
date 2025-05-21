@@ -275,7 +275,7 @@ const App = () => {
       {trades.length > 0 && (
         <div className="card p-4 mb-4">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4>📘 Trade History</h4>
+            <h4>📘 Trade History Total P&L ({_.sumBy(trades, 'result')})</h4>
             <button className="btn btn-danger btn-sm" onClick={deleteAllTrades}>
               🗑️ Delete All Trades
             </button>
