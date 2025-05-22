@@ -1,14 +1,14 @@
-// Updated PCRTradeAnalyzer.jsx with full feature suite
+// PCRTradeAnalyzer - Fully Modernized UI with Bootstrap 5 Enhancements
 import React, { useState, useEffect } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
 import { Bar } from "react-chartjs-2";
-import _ from "lodash";
 import {
   Chart as ChartJS,
   BarElement,
   CategoryScale,
   LinearScale,
 } from "chart.js";
+import _ from "lodash";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale);
 
@@ -26,26 +26,20 @@ const App = () => {
   const [capital, setCapital] = useState(
     () => parseFloat(localStorage.getItem("capital")) || 10000
   );
-  const [targetAchieved, setTargetAchieved] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  let today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [filter, setFilter] = useState(false);
   const [filterTrades, setFilterTrade] = useState([]);
-
   const maxTradesPerDay = 5;
   const dailyTarget = 3000;
 
   useEffect(() => {
     const saved = localStorage.getItem("pcr_trade_logs");
-    if (saved) {
-      setTrades(JSON.parse(saved));
-    }
+    if (saved) setTrades(JSON.parse(saved));
   }, []);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setInput({ ...input, [e.target.name]: e.target.value });
-  };
 
   const handleEditChange = (e, index) => {
     const updatedTrades = [...trades];
@@ -75,18 +69,12 @@ const App = () => {
     const spotPrice = parseFloat(spot);
     const strikePrice = parseFloat(strike);
 
-    if (
-      isNaN(pcrNum) ||
-      isNaN(cp) ||
-      isNaN(pp) ||
-      isNaN(spotPrice) ||
-      isNaN(strikePrice)
-    ) {
+    if ([pcrNum, cp, pp, spotPrice, strikePrice].some(Number.isNaN)) {
       alert("Please enter all values correctly.");
       return;
     }
 
-    let side = "";
+    let side = "NEUTRAL";
     let entry = 0;
     let stopLoss = 0;
     let targets = [];
@@ -109,8 +97,6 @@ const App = () => {
         (cp * 1.4).toFixed(2),
         (cp * 1.6).toFixed(2),
       ];
-    } else {
-      side = "NEUTRAL";
     }
 
     setSuggestion({ side, entry, stopLoss, targets });
@@ -126,7 +112,6 @@ const App = () => {
       entry: suggestion.entry,
       stopLoss: suggestion.stopLoss,
       targets: suggestion.targets,
-      segment: input.segment,
       qty: lotSize,
       exit: "",
       result: "",
@@ -140,7 +125,7 @@ const App = () => {
   };
 
   const deleteAllTrades = () => {
-    if (window.confirm("Are you sure you want to delete all trades?")) {
+    if (window.confirm("Delete all trades?")) {
       setTrades([]);
       localStorage.removeItem("pcr_trade_logs");
     }
@@ -151,192 +136,130 @@ const App = () => {
     .reduce((acc, t) => acc + parseFloat(t.result || 0), 0);
 
   const grouped = {};
-
   trades.forEach((t) => {
-    const dateObj = new Date(t.date);
-    const label = dateObj.toLocaleDateString("en-US", {
+    const label = new Date(t.date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-    }); // e.g., "May 22"
-
-    const result = parseFloat(t.result || 0);
-
-    if (!grouped[label]) {
-      grouped[label] = 0;
-    }
-
-    grouped[label] += result;
+    });
+    grouped[label] = (grouped[label] || 0) + parseFloat(t.result || 0);
   });
 
-  const labels = Object.keys(grouped);
-  const data = labels.map((label) => grouped[label]);
-
   const chartData = {
-    labels,
+    labels: Object.keys(grouped),
     datasets: [
       {
-        label: "Total Profit/Loss",
-        data,
-        backgroundColor: "#a0d0f5",
-        barThickness: 30,
+        label: "Total P&L",
+        data: Object.values(grouped),
+        backgroundColor: "rgba(54, 162, 235, 0.6)",
       },
     ],
   };
+
   const handleDateChange = (e) => {
-    if (e.target.value == today) {
-      setFilter(false);
-      setDate(today);
-    } else {
-      setFilter(true);
-      const selectedDate = e.target.value;
-      setDate(selectedDate);
-      console.log("Selected date:", selectedDate);
-
-      setFilterTrade(_.filter(trades, { date: selectedDate }));
-    }
-
-    // today = new Date(e.target.value).toISOString().split("T")[0]; // "YYYY-MM-DD"
+    const selected = new Date(e.target.value).toDateString();
+    setDate(e.target.value);
+    setFilter(selected !== new Date().toDateString());
+    setFilterTrade(_.filter(trades, { date: selected }));
   };
 
+  const displayTrades = filter ? filterTrades : trades;
+
   return (
-    <div className={`container py-4 ${darkMode ? "bg-dark text-white" : ""}`}>
-      <h2 className="mb-4 text-center">🎯 PCR Trade Analyzer</h2>
-      <div className="d-flex justify-content-end mb-2">
+    <div className="container py-5">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1 className="display-6">📊 PCR Trade Analyzer</h1>
         <button
-          className="btn btn-outline-secondary"
           onClick={() => setDarkMode(!darkMode)}
+          className="btn btn-outline-dark"
         >
           {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
       </div>
 
-      <div className="card p-4 mb-4">
-        <div className="row mb-3">
-          <div className="col">
-            <select
-              className="form-control"
-              name="segment"
-              value={input.segment}
-              onChange={handleChange}
-            >
-              <option value="NIFTY">NIFTY</option>
-              <option value="SENSEX">SENSEX</option>
-            </select>
-          </div>
-          <div className="col">
-            <input
-              className="form-control"
-              name="strike"
-              placeholder="Strike Price"
-              value={input.strike}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="col">
-            <input
-              className="form-control"
-              name="pcr"
-              placeholder="PCR"
-              value={input.pcr}
-              onChange={handleChange}
-            />
-          </div>
+      <div className="card shadow p-4 mb-5">
+        <h5 className="mb-3">📥 Enter Trade Inputs</h5>
+        <div className="row g-3">
+          {Object.entries(input).map(([key, value]) => (
+            <div className="col-md-4" key={key}>
+              <label className="form-label text-capitalize">{key}</label>
+              <input
+                type="text"
+                className="form-control"
+                name={key}
+                value={value}
+                onChange={handleChange}
+              />
+            </div>
+          ))}
         </div>
-
-        <div className="row mb-3">
-          <div className="col">
-            <input
-              className="form-control"
-              name="spot"
-              placeholder="Spot Price"
-              value={input.spot}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="col">
-            <input
-              className="form-control"
-              name="callPrice"
-              placeholder="Call Price"
-              value={input.callPrice}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="col">
-            <input
-              className="form-control"
-              name="putPrice"
-              placeholder="Put Price"
-              value={input.putPrice}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="col">
-            <button className="btn btn-success w-100" onClick={calculate}>
-              Get Trade Suggestion
-            </button>
-          </div>
+        <div className="mt-4">
+          <button className="btn btn-success w-100" onClick={calculate}>
+            Get Trade Suggestion
+          </button>
         </div>
       </div>
 
       {suggestion && (
-        <div className="card p-4 mb-3">
-          <h4>📢 Suggested Trade</h4>
+        <div className="alert alert-info p-4">
+          <h5>📢 Trade Suggestion</h5>
           {suggestion.side === "NEUTRAL" ? (
-            <p>Market is neutral. No trade suggested.</p>
+            <p>No trade suggestion. Market is neutral.</p>
           ) : (
-            <>
+            <div>
               <p>
                 <strong>Side:</strong> {suggestion.side}
               </p>
               <p>
-                <strong>Entry Price:</strong> ₹{suggestion.entry}
+                <strong>Entry:</strong> ₹{suggestion.entry}
               </p>
               <p>
                 <strong>Stop Loss:</strong> ₹{suggestion.stopLoss}
               </p>
               <p>
-                <strong>Targets:</strong>
+                <strong>Targets:</strong> {suggestion.targets.join(", ")}
               </p>
-              <ul>
-                {suggestion.targets.map((t, idx) => (
-                  <li key={idx}>₹{t}</li>
-                ))}
-              </ul>
               <button className="btn btn-primary mt-3" onClick={takeTrade}>
-                ✅ Take This Trade
+                ✅ Take Trade
               </button>
-            </>
+            </div>
           )}
         </div>
       )}
 
-      {/* {trades.length > 0 && (
-        
-      )} */}
-      {!filter && (
-        <div className="card p-4 mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4>
-              📘 Trade History Total P&L (
-              {_.sumBy(trades, (result) => Number(result.result))})
-            </h4>
-            {/* // _.sumBy(trades, result)} */}
-            <button className="btn btn-danger btn-sm" onClick={deleteAllTrades}>
-              🗑️ Delete All Trades
-            </button>
-          </div>
-
-          <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-            <h4>Filter: </h4>
+      <div className="card shadow p-4 mb-5">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="mb-0">
+            📘 Trade History (
+            {_.sumBy(trades, (result) => Number(result.result)).toLocaleString(
+              "en-IN",
+              {
+                style: "currency",
+                currency: "INR",
+              }
+            )}
+            )
+          </h5>
+          <button
+            className="btn btn-outline-danger btn-sm"
+            onClick={deleteAllTrades}
+          >
+            🗑️ Clear All
+          </button>
+        </div>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="row">
             <input
               type="date"
+              className="form-control"
               value={date}
-              onChange={(e) => handleDateChange(e)}
+              onChange={handleDateChange}
             />
           </div>
-          <table className="table table-bordered">
-            <thead>
+        </div>
+
+        <div className="table-responsive">
+          <table className="table table-hover align-middle">
+            <thead className="table-light">
               <tr>
                 <th>Date</th>
                 <th>Segment</th>
@@ -344,7 +267,7 @@ const App = () => {
                 <th>Side</th>
                 <th>Entry</th>
                 <th>Exit</th>
-                <th>Lot</th>
+                <th>Qty</th>
                 <th>Target</th>
                 <th>P&L</th>
                 <th>%</th>
@@ -352,8 +275,8 @@ const App = () => {
               </tr>
             </thead>
             <tbody>
-              {trades.map((t, index) => (
-                <tr key={index}>
+              {/* {displayTrades.map((t, i) => (
+                <tr key={i}>
                   <td>{t.date}</td>
                   <td>{t.segment}</td>
                   <td>{t.strike}</td>
@@ -364,7 +287,7 @@ const App = () => {
                       name="exit"
                       className="form-control"
                       value={t.exit}
-                      onChange={(e) => handleEditChange(e, index)}
+                      onChange={(e) => handleEditChange(e, i)}
                     />
                   </td>
                   <td>
@@ -372,7 +295,7 @@ const App = () => {
                       name="qty"
                       className="form-control"
                       value={t.qty}
-                      onChange={(e) => handleEditChange(e, index)}
+                      onChange={(e) => handleEditChange(e, i)}
                     />
                   </td>
                   <td>{t.targets[1]}</td>
@@ -389,122 +312,85 @@ const App = () => {
                       name="note"
                       className="form-control"
                       value={t.note}
-                      onChange={(e) => handleEditChange(e, index)}
+                      onChange={(e) => handleEditChange(e, i)}
                     />
                   </td>
                 </tr>
-              ))}
+              ))} */}
+              {[...displayTrades]
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map((t, index) => (
+                  <tr key={index}>
+                    <td>{t.date}</td>
+                    <td>{t.segment}</td>
+                    <td>{t.strike}</td>
+                    <td>{t.side}</td>
+                    <td>{t.entry}</td>
+                    <td>
+                      <input
+                        name="exit"
+                        className="form-control"
+                        value={t.exit}
+                        onChange={(e) => handleEditChange(e, index)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        name="qty"
+                        className="form-control"
+                        value={t.qty}
+                        onChange={(e) => handleEditChange(e, index)}
+                      />
+                    </td>
+                    <td>{t.targets[1]}</td>
+                    <td
+                      className={
+                        parseFloat(t.result) > 0
+                          ? "text-success"
+                          : "text-danger"
+                      }
+                    >
+                      {t.result}
+                    </td>
+                    <td>{t.percentage}%</td>
+                    <td>
+                      <input
+                        name="note"
+                        className="form-control"
+                        value={t.note}
+                        onChange={(e) => handleEditChange(e, index)}
+                      />
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
 
-      {filter && (
-        <div className="card p-4 mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4>
-              📘 Trade History Total P&L (
-              {_.sumBy(filterTrades, (result) => Number(result.result))})
-            </h4>
-          </div>
-
-          <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-            <h4>Filter: </h4>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => handleDateChange(e)}
-            />
-          </div>
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Segment</th>
-                <th>Strike</th>
-                <th>Side</th>
-                <th>Entry</th>
-                <th>Exit</th>
-                <th>Lot</th>
-                <th>Target</th>
-                <th>P&L</th>
-                <th>%</th>
-                <th>Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterTrades.map((t, index) => (
-                <tr key={index}>
-                  <td>{t.date}</td>
-                  <td>{t.segment}</td>
-                  <td>{t.strike}</td>
-                  <td>{t.side}</td>
-                  <td>{t.entry}</td>
-                  <td>
-                    <input
-                      name="exit"
-                      className="form-control"
-                      value={t.exit}
-                      onChange={(e) => handleEditChange(e, index)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      name="qty"
-                      className="form-control"
-                      value={t.qty}
-                      onChange={(e) => handleEditChange(e, index)}
-                    />
-                  </td>
-                  <td>{t.targets[1]}</td>
-                  <td
-                    className={
-                      parseFloat(t.result) > 0 ? "text-success" : "text-danger"
-                    }
-                  >
-                    {t.result}
-                  </td>
-                  <td>{t.percentage}%</td>
-                  <td>
-                    <input
-                      name="note"
-                      className="form-control"
-                      value={t.note}
-                      onChange={(e) => handleEditChange(e, index)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <div className="card p-4 mb-4">
-        <h5>📈 Daily P&L Chart</h5>
+      <div className="card shadow p-4 mb-5">
+        <h5 className="mb-3">📈 Daily P&L Chart</h5>
         <Bar data={chartData} />
       </div>
 
-      <div className="card p-4">
-        <h5>📋 Summary</h5>
-        <p>
-          <strong>Capital:</strong> ₹{capital.toFixed(2)}
-        </p>
-        <p>
-          <strong>Target:</strong> ₹{dailyTarget.toFixed(2)}
-        </p>
-        <p>
-          <strong>Trades Left:</strong>{" "}
-          {Math.max(
-            0,
-            maxTradesPerDay -
-              trades.filter((t) => t.date === new Date().toDateString()).length
-          )}
-        </p>
-        <p>
-          <strong>Today P&L:</strong> ₹{todayProfit.toFixed(2)}
-        </p>
-        {targetAchieved && <p className="text-success">🎯 Target achieved</p>}
+      <div className="card shadow p-4">
+        <h5 className="mb-3">📋 Summary</h5>
+        <ul className="list-group">
+          <li className="list-group-item">Capital: ₹{capital.toFixed(2)}</li>
+          <li className="list-group-item">Target: ₹{dailyTarget.toFixed(2)}</li>
+          <li className="list-group-item">
+            Today P&L: ₹{todayProfit.toFixed(2)}
+          </li>
+          <li className="list-group-item">
+            Trades Left:{" "}
+            {Math.max(
+              0,
+              maxTradesPerDay -
+                trades.filter((t) => t.date === new Date().toDateString())
+                  .length
+            )}
+          </li>
+        </ul>
       </div>
     </div>
   );
