@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Line } from "react-chartjs-2";
-import _ from 'lodash';
+import _ from "lodash";
 import {
   Chart as ChartJS,
   LineElement,
@@ -29,6 +29,10 @@ const App = () => {
   );
   const [targetAchieved, setTargetAchieved] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  let today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [filter, setFilter] = useState(false);
+  const [filterTrades, setFilterTrade] = useState([]);
 
   const maxTradesPerDay = 5;
   const dailyTarget = 3000;
@@ -160,6 +164,22 @@ const App = () => {
     ],
   };
 
+  const handleDateChange = (e) => {
+    if (e.target.value == today) {
+      setFilter(false);
+      setDate(today);
+    } else {
+      setFilter(true);
+      const selectedDate = e.target.value;
+      setDate(selectedDate);
+      console.log("Selected date:", selectedDate);
+
+      setFilterTrade(_.filter(trades, { date: selectedDate }));
+    }
+
+    // today = new Date(e.target.value).toISOString().split("T")[0]; // "YYYY-MM-DD"
+  };
+
   return (
     <div className={`container py-4 ${darkMode ? "bg-dark text-white" : ""}`}>
       <h2 className="mb-4 text-center">🎯 PCR Trade Analyzer</h2>
@@ -273,13 +293,29 @@ const App = () => {
         </div>
       )}
 
-      {trades.length > 0 && (
+      {/* {trades.length > 0 && (
+        
+      )} */}
+      {!filter && (
         <div className="card p-4 mb-4">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4>📘 Trade History Total P&L ({_.sumBy(trades, 'result')})</h4>
+            <h4>
+              📘 Trade History Total P&L (
+              {_.sumBy(trades, (result) => Number(result.result))})
+            </h4>
+            {/* // _.sumBy(trades, result)} */}
             <button className="btn btn-danger btn-sm" onClick={deleteAllTrades}>
               🗑️ Delete All Trades
             </button>
+          </div>
+
+          <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+            <h4>Filter: </h4>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => handleDateChange(e)}
+            />
           </div>
           <table className="table table-bordered">
             <thead>
@@ -299,6 +335,87 @@ const App = () => {
             </thead>
             <tbody>
               {trades.map((t, index) => (
+                <tr key={index}>
+                  <td>{t.date}</td>
+                  <td>{t.segment}</td>
+                  <td>{t.strike}</td>
+                  <td>{t.side}</td>
+                  <td>{t.entry}</td>
+                  <td>
+                    <input
+                      name="exit"
+                      className="form-control"
+                      value={t.exit}
+                      onChange={(e) => handleEditChange(e, index)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      name="qty"
+                      className="form-control"
+                      value={t.qty}
+                      onChange={(e) => handleEditChange(e, index)}
+                    />
+                  </td>
+                  <td>{t.targets[1]}</td>
+                  <td
+                    className={
+                      parseFloat(t.result) > 0 ? "text-success" : "text-danger"
+                    }
+                  >
+                    {t.result}
+                  </td>
+                  <td>{t.percentage}%</td>
+                  <td>
+                    <input
+                      name="note"
+                      className="form-control"
+                      value={t.note}
+                      onChange={(e) => handleEditChange(e, index)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {filter && (
+        <div className="card p-4 mb-4">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h4>
+              📘 Trade History Total P&L (
+              {_.sumBy(filterTrades, (result) => Number(result.result))})
+            </h4>
+          </div>
+
+          <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+            <h4>Filter: </h4>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => handleDateChange(e)}
+            />
+          </div>
+          <table className="table table-bordered">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Segment</th>
+                <th>Strike</th>
+                <th>Side</th>
+                <th>Entry</th>
+                <th>Exit</th>
+                <th>Lot</th>
+                <th>Target</th>
+                <th>P&L</th>
+                <th>%</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filterTrades.map((t, index) => (
                 <tr key={index}>
                   <td>{t.date}</td>
                   <td>{t.segment}</td>
