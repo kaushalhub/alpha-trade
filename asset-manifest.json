@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/alpha-trade/static/css/main.1a74e440.css",
-    "main.js": "/alpha-trade/static/js/main.2da78995.js",
+    "main.js": "/alpha-trade/static/js/main.076fa55a.js",
     "static/js/453.782d9c25.chunk.js": "/alpha-trade/static/js/453.782d9c25.chunk.js",
     "index.html": "/alpha-trade/index.html",
     "main.1a74e440.css.map": "/alpha-trade/static/css/main.1a74e440.css.map",
-    "main.2da78995.js.map": "/alpha-trade/static/js/main.2da78995.js.map",
+    "main.076fa55a.js.map": "/alpha-trade/static/js/main.076fa55a.js.map",
     "453.782d9c25.chunk.js.map": "/alpha-trade/static/js/453.782d9c25.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1a74e440.css",
-    "static/js/main.2da78995.js"
+    "static/js/main.076fa55a.js"
   ]
 }
