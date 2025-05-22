@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Line } from "react-chartjs-2";
+import _ from 'lodash';
 import {
   Chart as ChartJS,
   LineElement,
