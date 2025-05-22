@@ -1,17 +1,16 @@
 // Updated PCRTradeAnalyzer.jsx with full feature suite
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Line } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import _ from "lodash";
 import {
   Chart as ChartJS,
-  LineElement,
+  BarElement,
   CategoryScale,
   LinearScale,
-  PointElement,
 } from "chart.js";
 
-ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement);
+ChartJS.register(BarElement, CategoryScale, LinearScale);
 
 const App = () => {
   const [input, setInput] = useState({
@@ -151,19 +150,38 @@ const App = () => {
     .filter((t) => t.date === new Date().toDateString())
     .reduce((acc, t) => acc + parseFloat(t.result || 0), 0);
 
+  const grouped = {};
+
+  trades.forEach((t) => {
+    const dateObj = new Date(t.date);
+    const label = dateObj.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }); // e.g., "May 22"
+
+    const result = parseFloat(t.result || 0);
+
+    if (!grouped[label]) {
+      grouped[label] = 0;
+    }
+
+    grouped[label] += result;
+  });
+
+  const labels = Object.keys(grouped);
+  const data = labels.map((label) => grouped[label]);
+
   const chartData = {
-    labels: trades.map((t, i) => `${t.date.split(" ")[1]} ${i + 1}`),
+    labels,
     datasets: [
       {
-        label: "Profit/Loss",
-        data: trades.map((t) => parseFloat(t.result || 0)),
-        fill: false,
-        borderColor: "blue",
-        tension: 0.1,
+        label: "Total Profit/Loss",
+        data,
+        backgroundColor: "#a0d0f5",
+        barThickness: 30,
       },
     ],
   };
-
   const handleDateChange = (e) => {
     if (e.target.value == today) {
       setFilter(false);
@@ -464,7 +482,7 @@ const App = () => {
 
       <div className="card p-4 mb-4">
         <h5>📈 Daily P&L Chart</h5>
-        <Line data={chartData} />
+        <Bar data={chartData} />
       </div>
 
       <div className="card p-4">
