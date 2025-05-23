@@ -1,4 +1,3 @@
-// PCRTradeAnalyzer - Fully Modernized UI with Bootstrap 5 Enhancements
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import {
@@ -7,7 +6,6 @@ import {
   CategoryScale,
   LinearScale,
 } from "chart.js";
-import _ from "lodash";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale);
@@ -23,42 +21,76 @@ const App = () => {
   });
   const [suggestion, setSuggestion] = useState(null);
   const [trades, setTrades] = useState([]);
-  const [capital, setCapital] = useState(
+  const [capital] = useState(
     () => parseFloat(localStorage.getItem("capital")) || 10000
   );
   const [darkMode, setDarkMode] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [displayTrades, setDisplayTrades] = useState([]);
   const [filter, setFilter] = useState(false);
-  const [filterTrades, setFilterTrade] = useState([]);
-  const maxTradesPerDay = 5;
+
+  const maxTradesPerDay = 3;
   const dailyTarget = 3000;
 
+  // Load trades once
   useEffect(() => {
     const saved = localStorage.getItem("pcr_trade_logs");
     if (saved) setTrades(JSON.parse(saved));
   }, []);
 
+  // Handle display trades on change
+  useEffect(() => {
+    const selectedTrades = filter
+      ? trades.filter(
+          (t) =>
+            new Date(t.date).toDateString() === new Date(date).toDateString()
+        )
+      : trades;
+    setDisplayTrades(selectedTrades);
+  }, [trades, filter, date]);
+
   const handleChange = (e) =>
     setInput({ ...input, [e.target.name]: e.target.value });
 
   const handleEditChange = (e, index) => {
-    const updatedTrades = [...trades];
-    updatedTrades[index][e.target.name] = e.target.value;
-    const lotSize = parseFloat(updatedTrades[index].qty);
-    if (updatedTrades[index].exit && updatedTrades[index].entry && lotSize) {
-      const diff =
-        parseFloat(updatedTrades[index].exit) -
-        parseFloat(updatedTrades[index].entry);
-      const profit = diff * lotSize;
-      const percentage = (
-        (profit / (parseFloat(updatedTrades[index].entry) * lotSize)) *
-        100
-      ).toFixed(2);
-      updatedTrades[index].result = profit.toFixed(2);
-      updatedTrades[index].percentage = percentage;
-    }
-    setTrades(updatedTrades);
-    localStorage.setItem("pcr_trade_logs", JSON.stringify(updatedTrades));
+    const { name, value } = e.target;
+    setTrades((prevTrades) => {
+      const updated = [...prevTrades];
+      const filtered = filter
+        ? updated.filter(
+            (t) =>
+              new Date(t.date).toDateString() === new Date(date).toDateString()
+          )
+        : updated;
+
+      const targetIndex = filter ? filtered[index] : updated[index];
+
+      if (!targetIndex) return prevTrades;
+
+      const updatedTrade = { ...targetIndex, [name]: value };
+      const lotSize = parseFloat(updatedTrade.qty);
+      const entry = parseFloat(updatedTrade.entry);
+      const exit = parseFloat(updatedTrade.exit);
+
+      if (!isNaN(entry) && !isNaN(exit) && !isNaN(lotSize)) {
+        const profit = ((exit - entry) * lotSize).toFixed(2);
+        const percent = ((profit / (entry * lotSize)) * 100).toFixed(2);
+        updatedTrade.result = profit;
+        updatedTrade.percentage = percent;
+      } else {
+        updatedTrade.result = "";
+        updatedTrade.percentage = "";
+      }
+
+      const idx = updated.findIndex(
+        (t) => t.date === updatedTrade.date && t.strike === targetIndex.strike
+      );
+
+      updated[idx] = updatedTrade;
+
+      localStorage.setItem("pcr_trade_logs", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const calculate = () => {
@@ -156,16 +188,14 @@ const App = () => {
   };
 
   const handleDateChange = (e) => {
-    const selected = new Date(e.target.value).toDateString();
-    setDate(e.target.value);
-    setFilter(selected !== new Date().toDateString());
-    setFilterTrade(_.filter(trades, { date: selected }));
+    const selectedDate = e.target.value;
+    setDate(selectedDate);
+    setFilter(selectedDate !== new Date().toISOString().split("T")[0]);
   };
-
-  const displayTrades = filter ? filterTrades : trades;
 
   return (
     <div className="container py-5">
+      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="display-6">📊 PCR Trade Analyzer</h1>
         <button
@@ -176,6 +206,7 @@ const App = () => {
         </button>
       </div>
 
+      {/* Input Section */}
       <div className="card shadow p-4 mb-5">
         <h5 className="mb-3">📥 Enter Trade Inputs</h5>
         <div className="row g-3">
@@ -199,13 +230,14 @@ const App = () => {
         </div>
       </div>
 
+      {/* Suggestion */}
       {suggestion && (
         <div className="alert alert-info p-4">
           <h5>📢 Trade Suggestion</h5>
           {suggestion.side === "NEUTRAL" ? (
             <p>No trade suggestion. Market is neutral.</p>
           ) : (
-            <div>
+            <>
               <p>
                 <strong>Side:</strong> {suggestion.side}
               </p>
@@ -221,22 +253,22 @@ const App = () => {
               <button className="btn btn-primary mt-3" onClick={takeTrade}>
                 ✅ Take Trade
               </button>
-            </div>
+            </>
           )}
         </div>
       )}
 
+      {/* Trade History */}
       <div className="card shadow p-4 mb-5">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">
             📘 Trade History (
-            {_.sumBy(trades, (result) => Number(result.result)).toLocaleString(
-              "en-IN",
-              {
+            {displayTrades
+              .reduce((sum, t) => sum + parseFloat(t.result || 0), 0)
+              .toLocaleString("en-IN", {
                 style: "currency",
                 currency: "INR",
-              }
-            )}
+              })}
             )
           </h5>
           <button
@@ -250,7 +282,7 @@ const App = () => {
           <div className="row">
             <input
               type="date"
-              className="form-control"
+              className="form-control mb-3"
               value={date}
               onChange={handleDateChange}
             />
@@ -270,55 +302,13 @@ const App = () => {
                 <th>Qty</th>
                 <th>Target</th>
                 <th>P&L</th>
-                <th>%</th>
-                <th>Note</th>
+
+                {/* <th>Note</th> */}
               </tr>
             </thead>
             <tbody>
-              {/* {displayTrades.map((t, i) => (
-                <tr key={i}>
-                  <td>{t.date}</td>
-                  <td>{t.segment}</td>
-                  <td>{t.strike}</td>
-                  <td>{t.side}</td>
-                  <td>{t.entry}</td>
-                  <td>
-                    <input
-                      name="exit"
-                      className="form-control"
-                      value={t.exit}
-                      onChange={(e) => handleEditChange(e, i)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      name="qty"
-                      className="form-control"
-                      value={t.qty}
-                      onChange={(e) => handleEditChange(e, i)}
-                    />
-                  </td>
-                  <td>{t.targets[1]}</td>
-                  <td
-                    className={
-                      parseFloat(t.result) > 0 ? "text-success" : "text-danger"
-                    }
-                  >
-                    {t.result}
-                  </td>
-                  <td>{t.percentage}%</td>
-                  <td>
-                    <input
-                      name="note"
-                      className="form-control"
-                      value={t.note}
-                      onChange={(e) => handleEditChange(e, i)}
-                    />
-                  </td>
-                </tr>
-              ))} */}
               {[...displayTrades]
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                // .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .map((t, index) => (
                   <tr key={index}>
                     <td>{t.date}</td>
@@ -350,17 +340,17 @@ const App = () => {
                           : "text-danger"
                       }
                     >
-                      {t.result}
+                      {t.result} (<span>{t.percentage}%</span>)
                     </td>
-                    <td>{t.percentage}%</td>
-                    <td>
+
+                    {/* <td>
                       <input
                         name="note"
                         className="form-control"
                         value={t.note}
                         onChange={(e) => handleEditChange(e, index)}
                       />
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
             </tbody>
@@ -368,11 +358,13 @@ const App = () => {
         </div>
       </div>
 
+      {/* Chart */}
       <div className="card shadow p-4 mb-5">
         <h5 className="mb-3">📈 Daily P&L Chart</h5>
         <Bar data={chartData} />
       </div>
 
+      {/* Summary */}
       <div className="card shadow p-4">
         <h5 className="mb-3">📋 Summary</h5>
         <ul className="list-group">
